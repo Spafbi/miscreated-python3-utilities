@@ -398,9 +398,9 @@ def main():
         else:
             print('<empty result - ok>')
         exit(0)
-    else:
-        print("<Oops - something went wrong>")
-        exit(1)
+
+    print("<Oops - something went wrong>")
+    exit(1)
 
 
 if __name__ == '__main__':
