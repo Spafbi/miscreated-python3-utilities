@@ -3,7 +3,7 @@
 # title           : rcon.py
 # description     : Sends commands to Miscreated RCON
 # author          : Chris Snow - (aka Spafbi)
-# python_version  : 3.9.1
+# python_version  : 3.9.2
 # ===================================================
 import hashlib
 import logging
@@ -77,19 +77,19 @@ class MiscreatedRCON:
         """
         # attempt to successfully challenge the server
         # make attemps up to 'retry' value
-        retry = kwargs.get('retry', 10) + 1
-        challege_accepted = 0
+        retry = kwargs.get('retry', 10)
         authentication = None
-        while challege_accepted < retry:
+        while retry > 0:
             """
             attempt to authenticate with the uptime and the password md5
             with : between
             """
-            challege_accepted += 1
-            logging.debug("Challenge attempt: {}".format(challege_accepted))
+            logging.debug("Challenge attempt: {}".format(11 - retry))
             socket.setdefaulttimeout(5)
             try:
                 challenge = self.server.challenge()
+                if isinstance(float(challenge), float):
+                    retry = 0
             except:
                 this_sleep_time=0.25
                 logging.debug("Challenge failed: sleeping {} seconds".format(this_sleep_time))
@@ -97,9 +97,9 @@ class MiscreatedRCON:
                 # add a small wait before retry in case RCON is busy
                 time.sleep(this_sleep_time)
             socket.setdefaulttimeout(None)
-            challege_accepted = retry
             authentication = "{0}:{1}".format(challenge, self.password)
             logging.debug("authentication: {}".format(authentication))
+            retry -= 1
 
         # check to see if we are authorized
         if None in (authentication, challenge):
@@ -119,14 +119,14 @@ class MiscreatedRCON:
         if this_auth == 'authorized':
             logging.debug("Successful challenge and authorization")
             return True
-        else:
-            if 'Illegal Command' not in this_auth:
-                '''The following message is displayed on the command line, but
-                   is not otherwise handled'''
-                this_message = 'Authentication failed: {}'.format(this_auth)
-                logging.debug(this_message)
-                print(this_message)
-            return False
+
+        if 'Illegal Command' not in this_auth:
+            '''The following message is displayed on the command line, but
+                is not otherwise handled'''
+            this_message = 'Authentication failed: {}'.format(this_auth)
+            logging.debug(this_message)
+            print(this_message)
+        return False
 
     def do_authentication(self, retry=5):
         """
@@ -138,7 +138,7 @@ class MiscreatedRCON:
             success (bool): whether or not the challenge was successful
         """
         try:
-            logging.debug("Attempting RCON challeng")
+            logging.debug("Attempting RCON challenge")
             challenge = self.challenge_rcon(retry=retry)
             return challenge, True
         except OSError as e_error:
@@ -163,6 +163,7 @@ class MiscreatedRCON:
             socket.setdefaulttimeout(None)
             return cmd_result, True
         except OSError as except_e:
+            logging.debug(except_e)
             return False, False
 
     def exec_cmd_params(self, cmd, params):
@@ -188,6 +189,7 @@ class MiscreatedRCON:
             # "return False, False" regardless of whether or not the cause is a
             # timeout.
             # if 'timed out' in str(except_e):
+            logging.debug(except_e)
             return False, False
 
     def multi_rcon(self, **kwargs):
