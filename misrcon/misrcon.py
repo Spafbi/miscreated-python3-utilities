@@ -37,9 +37,7 @@ class MiscreatedRCON:
         self.password = kwargs.get('password', False)
         self.server = None
         logging.debug(kwargs)
-        logging.debug("Passed values: host={0}, port={1}, password={2}".format(self.ip,
-                                                                               self.port,
-                                                                               self.password))
+        logging.debug(f"Passed values: host={self.ip}, port={self.port}, password={self.password}")
 
         """
         We can't connect to the server if any of these are false, so return
@@ -56,8 +54,8 @@ class MiscreatedRCON:
             return None
 
         # assemble the RCON server URL
-        server_url = 'http://{0}:{1}/rpc2'.format(self.ip, int(self.port))
-        logging.debug('server_url: {}'.format(server_url))
+        server_url = f'http://{self.ip}:{int(self.port)}/rpc2'
+        logging.debug(f'server_url: {server_url}')
 
         # start the connection
         self.server = xmlrpc.client.ServerProxy(
@@ -85,7 +83,8 @@ class MiscreatedRCON:
             attempt to authenticate with the uptime and the password md5
             with : between
             """
-            logging.debug("Challenge attempt: {}".format(retry_max+1 - retry))
+            this_retry = retry_max+1 - retry
+            logging.debug(f"Challenge attempt: {this_retry}")
             socket.setdefaulttimeout(5)
             try:
                 challenge = self.server.challenge()
@@ -93,13 +92,13 @@ class MiscreatedRCON:
                     retry = 0
             except:
                 this_sleep_time=0.25
-                logging.debug("Challenge failed: sleeping {} seconds".format(this_sleep_time))
+                logging.debug(f"Challenge failed: sleeping {this_sleep_time} seconds")
                 challenge = None
                 # add a small wait before retry in case RCON is busy
                 time.sleep(this_sleep_time)
             socket.setdefaulttimeout(None)
-            authentication = "{0}:{1}".format(challenge, self.password)
-            logging.debug("authentication: {}".format(authentication))
+            authentication = f"{challenge}:{self.password}"
+            logging.debug(f"authentication: {authentication}")
             retry -= 1
 
         # check to see if we are authorized
@@ -109,7 +108,7 @@ class MiscreatedRCON:
 
         # Check for the proper return from the authentication attempt
         md5 = hashlib.md5(authentication.encode('utf-8')).hexdigest()
-        logging.debug("authentication_md5: {}".format(md5))
+        logging.debug(f"authentication_md5: {md5}")
 
         # This forces a 5 second timeout for socket connections
         socket.setdefaulttimeout(5)
@@ -124,7 +123,7 @@ class MiscreatedRCON:
         if 'Illegal Command' not in this_auth:
             '''The following message is displayed on the command line, but
                 is not otherwise handled'''
-            this_message = 'Authentication failed: {}'.format(this_auth)
+            this_message = f'Authentication failed: {this_auth}'
             logging.debug(this_message)
             print(this_message)
         return False
@@ -356,9 +355,9 @@ def main():
 
     # Just grabbing this script's filename
     prog = basename(__file__)
-    description = """Spafbi's RCON module and command-line utility:\r
-                     {0} may be used as either a Python 3 module, or as a
-                     standalone command-line utility.""".format(prog)
+    description = f"""Spafbi's RCON module and command-line utility:\r
+                     {prog} may be used as either a Python 3 module, or as a
+                     standalone command-line utility."""
 
     # Set up argparse to help people use this as a CLI utility
     parser = argparse.ArgumentParser(prog=prog, description=description)
