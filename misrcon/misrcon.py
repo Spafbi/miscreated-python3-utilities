@@ -78,13 +78,14 @@ class MiscreatedRCON:
         # attempt to successfully challenge the server
         # make attemps up to 'retry' value
         retry = kwargs.get('retry', 10)
+        retry_max = retry
         authentication = None
         while retry > 0:
             """
             attempt to authenticate with the uptime and the password md5
             with : between
             """
-            logging.debug("Challenge attempt: {}".format(11 - retry))
+            logging.debug("Challenge attempt: {}".format(retry_max+1 - retry))
             socket.setdefaulttimeout(5)
             try:
                 challenge = self.server.challenge()
@@ -256,6 +257,24 @@ class MiscreatedRCON:
         status['success'] = None
         success = False
 
+        # Okay... Let's assume we're already authenticated and try executing
+        # the RCON commands without first authenticating.
+        if params:  # Call the appropriate method is the command has spaces
+            cmd_result, authenticated = self.exec_cmd_params(cmd, params)
+        else:  # Call the appropriate method is the command has no spaces
+            cmd_result, authenticated = self.exec_cmd(cmd)
+
+        # this tests to see if we got a challenge error
+        success = self.is_cmd_success(cmd_result)
+
+        # this test the result known command errors
+        status['success'] = self.is_bad_results_11(cmd_result, success)
+        status['returned'] = cmd_result  # the rcon output is in here
+
+        if status['success']:
+            return status
+
+        # Okay - so we need to try again, but authenticate this time.
         # Try to execute the command until it's successful or exceeds attempts
         while not success:
             while not authenticated:  # Time to authenticate (maybe again)
@@ -274,7 +293,7 @@ class MiscreatedRCON:
             else:  # Call the appropriate method is the command has no spaces
                 cmd_result, authenticated = self.exec_cmd(cmd)
 
-            # this tests to see if we gota challenge error
+            # this tests to see if we got a challenge error
             success = self.is_cmd_success(cmd_result)
 
         # this test the result known command errors
