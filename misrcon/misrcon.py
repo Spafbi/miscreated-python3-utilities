@@ -37,7 +37,8 @@ class MiscreatedRCON:
         self.password = kwargs.get('password', False)
         self.server = None
         logging.debug(kwargs)
-        logging.debug(f"Passed values: host={self.ip}, port={self.port}, password={self.password}")
+        logging.debug(f"Passed values: host={self.ip}, port={self.port}, " \
+                      f"password={self.password}")
 
         """
         We can't connect to the server if any of these are false, so return
