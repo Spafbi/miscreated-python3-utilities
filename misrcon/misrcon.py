@@ -271,9 +271,18 @@ class MiscreatedRCON:
         status['success'] = self.is_bad_results_11(cmd_result, success)
         status['returned'] = cmd_result  # the rcon output is in here
 
-        if status['success']:
+        invalid_command = True if status['returned'].strip() == "Illegal Command" else False
+
+        if status['success'] and not invalid_command:
             return status
 
+        # reset default values used for testing
+        authenticated = False
+        cmd_result = None
+        status['returned'] = dict()
+        status['success'] = None
+        success = False
+        
         # Okay - so we need to try again, but authenticate this time.
         # Try to execute the command until it's successful or exceeds attempts
         while not success:
