@@ -314,12 +314,10 @@ class MiscreatedRCON:
     def is_bad_results_11(self, value, success):
         if value and value is not None:
             value = value[:11]
-        else:
-            value = '[__NONE__!]'
         # the passed value should contain only the first 11 characters of the
         # rcon result
         # list containing known bad strings
-        bad_results_11 = ('[__NONE__!]', '[Whitelist]')
+        bad_results_11 = ('[Whitelist]')
         if not len(value):  # Sometimes RCON returns nothing, and that's okay
             return success
         if value in bad_results_11:  # If a match is found return False
