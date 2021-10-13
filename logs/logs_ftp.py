@@ -35,29 +35,25 @@ class FTPServer:
             return False
 
         if self.use_tls:
-            try:
-                self.ftp = ftplib.FTP_TLS()
-                self.ftp.connect(host= self.host, port=self.port)
-                self.ftp.login(user=self.username, passwd=self.password)
-                self.ftp.prot_p()
-            except ftplib.all_errors as e:
-                logging.info('FTPS authentication failure')
-                logging.debug(e)
-                return False
+            self.ftp = ftplib.FTP_TLS()
         else:
-            try:
-                self.ftp = ftplib.FTP(self.host)
-            except ftplib.all_errors as e:
-                logging.info('Could not establish connection with the target FTP server')
-                logging.debug(e)
-                return False
+            self.ftp = ftplib.FTP()
+            
+        try:
+            self.ftp.connect(host=self.host, port=self.port)
+        except ftplib.all_errors as e:
+            logging.info('Could not establish connection with the target FTP server')
+            logging.debug(e)
+            return False
 
-            try:
-                self.ftp.login(user=self.username, passwd=self.password)
-            except ftplib.all_errors as e:
-                logging.info('FTP authentication failure')
-                logging.debug(e)
-                return False
+        try:
+            self.ftp.login(user=self.username, passwd=self.password)
+            if self.use_tls:
+                self.ftp.prot_p()
+        except ftplib.all_errors as e:
+            logging.info('FTP authentication failure')
+            logging.debug(e)
+            return False
 
         self.startdir = self.ftp.pwd()
 
