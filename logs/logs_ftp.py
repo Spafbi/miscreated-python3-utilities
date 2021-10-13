@@ -15,31 +15,12 @@ import logging
 import os
 import ssl
 
-class ImplicitFTP_TLS(ftplib.FTP_TLS):
-    """FTP_TLS subclass that automatically wraps sockets in SSL to support implicit FTPS."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._sock = None
-
-    @property
-    def sock(self):
-        """Return the socket."""
-        return self._sock
-
-    @sock.setter
-    def sock(self, value):
-        """When modifying the socket, ensure that it is ssl wrapped."""
-        if value is not None and not isinstance(value, ssl.SSLSocket):
-            value = self.context.wrap_socket(value)
-        self._sock = value
-
 class FTPServer:
     def __init__(self, **kwargs):
         self.host = kwargs.get('host', False)
         self.local_dir = kwargs.get('local_dir', '.')
         self.password = kwargs.get('password', False)
-        self.port = kwargs.get('port', False)
+        self.port = kwargs.get('port', 21)
         self.remote_dir = kwargs.get('remote_dir', False)
         self.remote_tz = timezone(kwargs.get('tz', 'UTC'))
         self.startdir = False
@@ -55,8 +36,8 @@ class FTPServer:
 
         if self.use_tls:
             try:
-                self.ftp = ImplicitFTP_TLS()
-                self.ftp.connect(host=self.host, port=self.port)
+                self.ftp = ftplib.FTP_TLS()
+                self.ftp.connect(host= self.host, port=self.port)
                 self.ftp.login(user=self.username, passwd=self.password)
                 self.ftp.prot_p()
             except ftplib.all_errors as e:
