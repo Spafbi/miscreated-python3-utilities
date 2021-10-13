@@ -165,7 +165,10 @@ class FTPServer:
                 self.get_file(remotefilename=filename,
                               localfilename=localfilename,
                               resume=True)
-        this_ftp.quit()
+        try:
+            this_ftp.quit()
+        except:
+            pass
 
     def min_requirement_check(self):
         if False in (self.host, self.password, self.username):
