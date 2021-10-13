@@ -7,22 +7,43 @@
 # python_version  : 3.9.1
 # ===================================================
 from datetime import datetime, timedelta
-from ftplib import FTP
 from glob import glob
 from pytz import timezone
 import click
 import ftplib
 import logging
 import os
+import ssl
+
+class ImplicitFTP_TLS(ftplib.FTP_TLS):
+    """FTP_TLS subclass that automatically wraps sockets in SSL to support implicit FTPS."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._sock = None
+
+    @property
+    def sock(self):
+        """Return the socket."""
+        return self._sock
+
+    @sock.setter
+    def sock(self, value):
+        """When modifying the socket, ensure that it is ssl wrapped."""
+        if value is not None and not isinstance(value, ssl.SSLSocket):
+            value = self.context.wrap_socket(value)
+        self._sock = value
 
 class FTPServer:
     def __init__(self, **kwargs):
         self.host = kwargs.get('host', False)
         self.local_dir = kwargs.get('local_dir', '.')
         self.password = kwargs.get('password', False)
+        self.port = kwargs.get('port', False)
         self.remote_dir = kwargs.get('remote_dir', False)
         self.remote_tz = timezone(kwargs.get('tz', 'UTC'))
         self.startdir = False
+        self.use_tls = kwargs.get('use_tls', False)
         self.username = kwargs.get('username', False)
         self.verbose = kwargs.get('verbose', False)
 
@@ -32,19 +53,30 @@ class FTPServer:
         if not self.min_requirement_check():
             return False
 
-        try:
-            self.ftp = FTP(self.host)
-        except ftplib.all_errors as e:
-            logging.info('Could not establish connection with the target FTP server')
-            logging.debug(e)
-            return False
+        if self.use_tls:
+            try:
+                self.ftp = ImplicitFTP_TLS()
+                self.ftp.connect(host=self.host, port=self.port)
+                self.ftp.login(user=self.username, passwd=self.password)
+                self.ftp.prot_p()
+            except ftplib.all_errors as e:
+                logging.info('FTPS authentication failure')
+                logging.debug(e)
+                return False
+        else:
+            try:
+                self.ftp = ftplib.FTP(self.host)
+            except ftplib.all_errors as e:
+                logging.info('Could not establish connection with the target FTP server')
+                logging.debug(e)
+                return False
 
-        try:
-            self.ftp.login(user=self.username, passwd=self.password)
-        except ftplib.all_errors as e:
-            logging.info('FTP authentication failure')
-            logging.debug(e)
-            return False
+            try:
+                self.ftp.login(user=self.username, passwd=self.password)
+            except ftplib.all_errors as e:
+                logging.info('FTP authentication failure')
+                logging.debug(e)
+                return False
 
         self.startdir = self.ftp.pwd()
 
@@ -113,7 +145,12 @@ class FTPServer:
             logging.debug("Assuming we need to grab yesterday's files")
 
         ls = []
-        this_ftp.retrlines('LIST', ls.append)
+        
+        try:
+            this_ftp.retrlines('LIST', ls.append)
+        except:
+            pass
+        
         for f in ls:
             if today in f or yesterday in f:
                 if "chatlog" in f:
