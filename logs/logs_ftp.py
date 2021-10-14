@@ -14,33 +14,41 @@ import click
 import ftplib
 import logging
 import os
-
+import ssl
 import pytz
+
+class MyFTP_TLS(ftplib.FTP_TLS):
+    """Explicit FTPS, with shared TLS session"""
+    def ntransfercmd(self, cmd, rest=None):
+        conn, size = ftplib.FTP.ntransfercmd(self, cmd, rest)
+        if self._prot_p:
+            conn = self.context.wrap_socket(conn,
+                                            server_hostname=self.host,
+                                            session=self.sock.session)
+        return conn, size
 
 class FTPServer:
     def __init__(self, **kwargs):
         self.host = kwargs.get('host', False)
         self.local_dir = Path(kwargs.get('local_dir', '.'))
+        self.local_dir = Path(kwargs.get('local_dir', '.'))
         self.password = kwargs.get('password', False)
         self.port = kwargs.get('port', 21)
         self.remote_dir = kwargs.get('remote_dir', False)
         self.remote_tz = timezone(kwargs.get('tz', 'UTC'))
-        self.startdir = False
         self.use_tls = kwargs.get('use_tls', False)
         self.username = kwargs.get('username', False)
         self.verbose = kwargs.get('verbose', False)
 
-        self.ftp = False
-
+        if self.use_tls:
+            self.ftp = MyFTP_TLS()
+        else:
+            self.ftp = ftplib.FTP()
+            
     def authenticate_and_cd(self):
         if not self.min_requirement_check():
             return False
 
-        if self.use_tls:
-            self.ftp = ftplib.FTP_TLS()
-        else:
-            self.ftp = ftplib.FTP()
-            
         try:
             self.ftp.connect(host=self.host, port=self.port)
         except ftplib.all_errors as e:
@@ -52,12 +60,11 @@ class FTPServer:
             self.ftp.login(user=self.username, passwd=self.password)
             if self.use_tls:
                 self.ftp.prot_p()
+                self.ftp.set_pasv(True)
         except ftplib.all_errors as e:
             logging.info('FTP authentication failure')
             logging.debug(e)
             return False
-
-        self.startdir = self.ftp.pwd()
 
         if self.remote_dir:
             return self.change_remote_directory()
@@ -76,7 +83,9 @@ class FTPServer:
 
     def get_file(self, **kwargs):
         localfilename = kwargs.get('localfilename', None)
+        logging.debug(f'localfilename: {localfilename}')
         remotefilename = kwargs.get('remotefilename', None)
+        logging.debug(f'remotefilename: {remotefilename}')
         resume = kwargs.get('resume', True)
 
         if None in (remotefilename, localfilename):
@@ -105,19 +114,18 @@ class FTPServer:
         """
         This method only grabs the last two days of log files.
         """
-        ld = self.local_dir
-        rtz = self.remote_tz
-        this_ftp = self.ftp
-        IST = pytz.timezone(f'{rtz}')
+        local_dir = self.local_dir
+        remote_timezone = self.remote_tz
+        IST = pytz.timezone(f'{remote_timezone}')
         this_now = datetime.now(IST)
         today = this_now.strftime("%Y-%m-%d")
         yesterday = (
             (
-                this_now.replace(tzinfo=rtz) - timedelta(days=1)
+                this_now.replace(tzinfo=remote_timezone) - timedelta(days=1)
             ).strftime("%Y-%m-%d")
         )
 
-        if bool(glob('{0}/*{1}.txt*'.format(ld, today))):
+        if bool(glob('{0}/*{1}.txt*'.format(local_dir, today))):
             logging.debug("Files with the current date exist")
             yesterday = '9999-99-99'
         else:
@@ -127,9 +135,13 @@ class FTPServer:
         ls = []
         
         try:
-            this_ftp.retrlines('LIST', ls.append)
-        except:
-            pass
+            logging.debug("Attempting to list remote path...")
+            ls = self.ftp.nlst()
+            # self.ftp.retrlines('LIST', ls.append) // Old method for getting file list
+        except ftplib.all_errors as e:
+            logging.debug(e)
+        
+        logging.debug(f'ls: {ls}')
         
         for f in ls:
             if today in f or yesterday in f:
@@ -139,16 +151,16 @@ class FTPServer:
                     pos = f.find("damagelog")
                 filename = "{}\r".format(f)[pos:].strip()
                 logging.debug("Grabbing: {0}".format(filename))
-                if not os.path.exists(ld):
-                    os.makedirs(ld)
-                localfilename = "{0}/{1}".format(ld, filename)
+                if not os.path.exists(local_dir):
+                    os.makedirs(local_dir)
+                localfilename = "{0}/{1}".format(local_dir, filename)
                 self.get_file(remotefilename=filename,
                               localfilename=localfilename,
                               resume=True)
         try:
-            this_ftp.quit()
-        except:
-            pass
+            self.ftp.quit()
+        except ftplib.all_errors as e:
+            logging.debug(e)
 
     def min_requirement_check(self):
         if False in (self.host, self.password, self.username):
