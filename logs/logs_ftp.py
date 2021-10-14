@@ -8,17 +8,19 @@
 # ===================================================
 from datetime import datetime, timedelta
 from glob import glob
+from pathlib import Path
 from pytz import timezone
 import click
 import ftplib
 import logging
 import os
-import ssl
+
+import pytz
 
 class FTPServer:
     def __init__(self, **kwargs):
         self.host = kwargs.get('host', False)
-        self.local_dir = kwargs.get('local_dir', '.')
+        self.local_dir = Path(kwargs.get('local_dir', '.'))
         self.password = kwargs.get('password', False)
         self.port = kwargs.get('port', 21)
         self.remote_dir = kwargs.get('remote_dir', False)
@@ -106,8 +108,9 @@ class FTPServer:
         ld = self.local_dir
         rtz = self.remote_tz
         this_ftp = self.ftp
-        this_now = datetime.utcnow()
-        today = this_now.replace(tzinfo=rtz).strftime("%Y-%m-%d")
+        IST = pytz.timezone(f'{rtz}')
+        this_now = datetime.now(IST)
+        today = this_now.strftime("%Y-%m-%d")
         yesterday = (
             (
                 this_now.replace(tzinfo=rtz) - timedelta(days=1)
