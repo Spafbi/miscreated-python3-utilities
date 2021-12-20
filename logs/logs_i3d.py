@@ -36,7 +36,7 @@ class i3D_Server:
         if None in (username, password, self.srvr):
             self.error = 'missing credentials'
             if verbose:
-                print('Error: {}'.format(self.error))
+                print(f'Error: {self.error}')
             return False
         else:
             self.req_session = requests.Session()
@@ -52,7 +52,7 @@ class i3D_Server:
         verbose = kwargs.get("verbose", False)
         yesterday = kwargs.get("yesterday", None)
 
-        if bool(glob('{0}/*{1}.txt*'.format(directory, today))):
+        if bool(glob(f'{directory}/*{today}.txt*')):
             yesterday = '9999-99-99'
             if verbose:
                 print("Files with the current date exist.")
@@ -110,8 +110,7 @@ class i3D_Server:
             chat_log = line.find("<td>chatlog_") >= 0
             on_click = line.find("<td><a onclick") >= 0
             if verbose and (damage_log or chat_log or on_click):
-                print('damage_log: {}, chat_log: {}, on_click: {}'.format(
-                    damage_log, chat_log, on_click))
+                print(f'damage_log: {damage_log}, chat_log: {chat_log}, on_click: {on_click}')
             if damage_log or chat_log or on_click:
                 trash, schtuff = line.strip().split("<td>", 1)
                 schtuff = schtuff.strip().replace('</td>', '')
@@ -119,7 +118,7 @@ class i3D_Server:
                 continue
 
             if verbose:
-                print('Schtuff: {}'.format(schtuff))
+                print(f'Schtuff: {schtuff}')
 
             if "damagelog_" in schtuff or "chatlog_" in schtuff:
                 key = schtuff
@@ -129,7 +128,7 @@ class i3D_Server:
                 continue
 
             if verbose:
-                print('Key: {}, Value: {}'.format(key, value))
+                print(f'Key: {key}, Value: {value}')
 
             if key is not None and value is not None:
                 if today in key or yesterday in key:
@@ -141,12 +140,12 @@ class i3D_Server:
 
         for key, value in file_ids.items():
             if verbose:
-                print('Log file: {}, Download ID: {}'.format(key, value))
+                print(f'Log file: {key}, Download ID: {value}')
 
             url = ("https://customer.i3d.net/controlpanel/gaming/game"
                    "/gameserver-log-download.php?log=1"
-                   "&server={0}&file={1}".format(self.srvr, value))
-            filename = "{}/{}".format(self.local_dir, key)
+                   f"&server={self.srvr}&file={value}")
+            filename = f"{self.local_dir}/{key}"
             self.fetch_file(url, filename)
 
 

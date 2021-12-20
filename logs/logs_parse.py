@@ -10,7 +10,7 @@
 import hashlib
 
 
-def chat_line(line, filedate=None, hash_fieldname='_id'):
+def chat_line(line, filedate=None):
     '''
     Parse a line from the Miscrated chat log
     :param string: a line from a Miscreated chat log
@@ -23,7 +23,7 @@ def chat_line(line, filedate=None, hash_fieldname='_id'):
     if filedate is None:
         c['entry_time'] = line[1:9]
     else:
-        c['entry_time'] = '{} {}'.format(filedate, line[1:9])
+        c['entry_time'] = f'{filedate} {line[1:9]}'
     c['steam_id'] = line[20:37]
     chunk = line[45:].split('] [IP ', 1)
     c['player_name'] = chunk[0].strip()
@@ -36,7 +36,7 @@ def chat_line(line, filedate=None, hash_fieldname='_id'):
     return c
 
 
-def damage_line(line, filedate=None, hash_fieldname='_id'):
+def damage_line(line, filedate=None):
     '''
     Parse a line from the Miscrated damage log
     :param string: a line from a Miscreated damage log
@@ -50,7 +50,7 @@ def damage_line(line, filedate=None, hash_fieldname='_id'):
     if filedate is None:
         d['timestamp'] = line[1:13]
     else:
-        d['timestamp'] = '{} {}'.format(filedate, line[1:13])
+        d['timestamp'] = f'{filedate} {line[1:13]}'
     d['entry_time'] = line[1:13]
     # d['damage_time'] = line[1:9]
     # d['damage_time_microseconds'] = line[10:13]
@@ -127,19 +127,15 @@ def damage_line(line, filedate=None, hash_fieldname='_id'):
         if entry_time_hr == 24:
             entry_time_mod = "0.0"
         else:
-            entry_time_mod = "{}.{}".format(entry_time_hr, 0)
+            entry_time_mod = f"{entry_time_hr}.{0}"
     else:
-        entry_time_mod = "{}.{}".format(entry_time_hr, entry_time_min)
+        entry_time_mod = f"{entry_time_hr}.{entry_time_min}"
     this_target_name = str(d.get('target_name', ''))
     this_entry_time_mod = str(entry_time_mod)
     this_target_position_X = str(d.get('target_position_X', '00'))[:2]
     this_target_position_Y = str(d.get('target_position_Y', '00'))[:2]
     this_target_position_Z = str(d.get('target_position_Z', '00'))[:1]
-    string = "{0}{1}{2}{3}{4}".format(this_target_name,
-                                      this_entry_time_mod,
-                                      this_target_position_X,
-                                      this_target_position_Y,
-                                      this_target_position_Z)
+    string = "{this_target_name}{this_entry_time_mod}{this_target_position_X}{this_target_position_Y}{this_target_position_Z}"
     if filedate is not None:
         string += filedate
     d['digest'] = hashlib.md5(string.encode()).hexdigest()

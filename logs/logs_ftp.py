@@ -92,7 +92,7 @@ class FTPServer:
             return False
 
         if os.path.isfile(localfilename):
-            logging.info('Local file exists - resuming...')
+            logging.debug('Local file exists - resuming...')
 
         if resume:
             localfile = open(localfilename, 'ab')
@@ -105,7 +105,7 @@ class FTPServer:
             self.ftp.retrbinary('RETR ' + remotefilename,
                             localfile.write, 1024, resume_from)
         except ftplib.all_errors as e:
-            logging.info('Could not retrieve remote file')
+            logging.debug('Could not retrieve remote file')
             logging.debug(e)
         
         localfile.close()
@@ -125,7 +125,7 @@ class FTPServer:
             ).strftime("%Y-%m-%d")
         )
 
-        if bool(glob('{0}/*{1}.txt*'.format(local_dir, today))):
+        if bool(glob(f'{local_dir}/*{today}.txt*')):
             logging.debug("Files with the current date exist")
             yesterday = '9999-99-99'
         else:
@@ -149,11 +149,11 @@ class FTPServer:
                     pos = f.find("chatlog")
                 elif "damagelog" in f:
                     pos = f.find("damagelog")
-                filename = "{}\r".format(f)[pos:].strip()
-                logging.debug("Grabbing: {0}".format(filename))
+                filename = f"{f}\r"[pos:].strip()
+                logging.debug(f"Grabbing: {filename}")
                 if not os.path.exists(local_dir):
                     os.makedirs(local_dir)
-                localfilename = "{0}/{1}".format(local_dir, filename)
+                localfilename = f"{local_dir}/{filename}"
                 self.get_file(remotefilename=filename,
                               localfilename=localfilename,
                               resume=True)
@@ -240,7 +240,7 @@ def main(host,
                 "timezone": timezone,
                 "verbose": verbose}
 
-    logging.debug('obj_vars: {}'.format(obj_vars))
+    logging.debug(f'obj_vars: {obj_vars}')
 
     this_server = FTPServer(**obj_vars)
     if this_server.authenticate_and_cd():
