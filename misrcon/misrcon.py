@@ -126,7 +126,6 @@ class MiscreatedRCON:
                 is not otherwise handled'''
             this_message = f'Authentication failed: {this_auth}'
             logging.debug(this_message)
-            print(this_message)
         return False
 
     def do_authentication(self, retry=5):
