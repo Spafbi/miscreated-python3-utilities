@@ -135,7 +135,7 @@ def damage_line(line, filedate=None):
     this_target_position_X = str(d.get('target_position_X', '00'))[:2]
     this_target_position_Y = str(d.get('target_position_Y', '00'))[:2]
     this_target_position_Z = str(d.get('target_position_Z', '00'))[:1]
-    string = "{this_target_name}{this_entry_time_mod}{this_target_position_X}{this_target_position_Y}{this_target_position_Z}"
+    string = f"{this_target_name}{this_entry_time_mod}{this_target_position_X}{this_target_position_Y}{this_target_position_Z}"
     if filedate is not None:
         string += filedate
     d['digest'] = hashlib.md5(string.encode()).hexdigest()
