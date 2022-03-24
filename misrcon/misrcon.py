@@ -314,6 +314,11 @@ class MiscreatedRCON:
         if value and value is not None:
             value = value[:11]
         # the passed value should contain only the first 11 characters of the
+
+        # return False for illegal commands
+        if f"{value}" == "Illegal Com":
+            return False
+
         # rcon result
         # list containing known bad strings
         bad_results_11 = ('[Whitelist]')
