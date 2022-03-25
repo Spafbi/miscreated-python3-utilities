@@ -17,6 +17,27 @@ import os
 import ssl
 import pytz
 
+
+class ImplicitFTP_TLS(ftplib.FTP_TLS):
+    """FTP_TLS subclass that automatically wraps sockets in SSL to support implicit FTPS."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._sock = None
+
+    @property
+    def sock(self):
+        """Return the socket."""
+        return self._sock
+
+    @sock.setter
+    def sock(self, value):
+        """When modifying the socket, ensure that it is ssl wrapped."""
+        if value is not None and not isinstance(value, ssl.SSLSocket):
+            value = self.context.wrap_socket(value)
+        self._sock = value
+
+
 class MyFTP_TLS(ftplib.FTP_TLS):
     """Explicit FTPS, with shared TLS session"""
     def ntransfercmd(self, cmd, rest=None):
@@ -36,13 +57,18 @@ class FTPServer:
         self.port = kwargs.get('port', 21)
         self.remote_dir = kwargs.get('remote_dir', False)
         self.remote_tz = timezone(kwargs.get('tz', 'UTC'))
-        self.use_tls = kwargs.get('use_tls', False)
+        self.use_tls = kwargs.get('use_tls', False) # Values: False, implicit FTPS, explicit FTPS
         self.username = kwargs.get('username', False)
         self.verbose = kwargs.get('verbose', False)
 
-        if self.use_tls:
+        if self.use_tls == "explicit":
+            logging.debug('Using explicit TLS')
             self.ftp = MyFTP_TLS()
+        elif self.use_tls == "implicit":
+            logging.debug('Using implicit TLS')
+            self.ftp = ImplicitFTP_TLS()
         else:
+            logging.debug('NOT using TLS')
             self.ftp = ftplib.FTP()
             
     def authenticate_and_cd(self):
@@ -60,6 +86,7 @@ class FTPServer:
             self.ftp.login(user=self.username, passwd=self.password)
             if self.use_tls:
                 self.ftp.prot_p()
+            if self.use_tls == "explicit":
                 self.ftp.set_pasv(True)
         except ftplib.all_errors as e:
             logging.info('FTP authentication failure')
