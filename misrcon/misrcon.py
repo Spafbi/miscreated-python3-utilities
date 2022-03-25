@@ -308,12 +308,16 @@ class MiscreatedRCON:
         status['success'] = self.is_bad_results_11(cmd_result, success)
         status['returned'] = cmd_result  # the rcon output is in here
 
+        logging.debug(status)
+
         return status
 
     def is_bad_results_11(self, value, success):
         if value and value is not None:
             value = value[:11]
         # the passed value should contain only the first 11 characters of the
+
+        logging.debug(f"Value: {value}")
 
         # return False for illegal commands
         if f"{value}" == "Illegal Com":
@@ -322,6 +326,9 @@ class MiscreatedRCON:
         # rcon result
         # list containing known bad strings
         bad_results_11 = ('[Whitelist]')
+        
+        if isinstance(value, (bool)):  # Catch boolean values and assume success
+            return success
         if not len(value):  # Sometimes RCON returns nothing, and that's okay
             return success
         if value in bad_results_11:  # If a match is found return False
