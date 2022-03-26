@@ -270,7 +270,10 @@ class MiscreatedRCON:
         status['success'] = self.is_bad_results_11(cmd_result, success)
         status['returned'] = cmd_result  # the rcon output is in here
 
-        invalid_command = True if status['returned'].strip() == "Illegal Command" else False
+        try:
+            invalid_command = True if status['returned'].strip() == "Illegal Command" else False
+        except:
+            invalid_command = False
 
         if status['success'] and not invalid_command:
             return status
