@@ -24,12 +24,8 @@ def chat_line(line, filedate=None):
         c['entry_time'] = line[1:9]
     else:
         c['entry_time'] = f'{filedate} {line[1:9]}'
-    if "] [SteamID 0] [" in c:
-        c['steam_id'] = line[20:21]
-        chunk = line[29:].split('] [IP ', 1)
-    else:
-        c['steam_id'] = line[20:37]
-        chunk = line[45:].split('] [IP ', 1)
+    c['steam_id'] = line[20:37]
+    chunk = line[45:].split('] [IP ', 1)
     c['player_name'] = chunk[0].strip()
     chunk = chunk[1].split(':', 1)
     c['ip_address'] = chunk[0]
