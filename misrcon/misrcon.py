@@ -433,8 +433,13 @@ def main():
                   "returned": None}
 
     if result['success']:
-        if len(result['returned']):
-            print(result['returned'])
+        if isinstance(result['returned'], bool):
+            printed_result = f"<bool:{result['returned']}>"
+        else:
+            printed_result = result['returned']
+
+        if len(printed_result):
+            print(printed_result)
         else:
             print('<empty result - ok>')
         exit(0)
